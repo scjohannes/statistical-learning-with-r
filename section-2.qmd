@@ -1,0 +1,12 @@
+---
+title: "Section 2"
+author: "Johannes Schwenke"
+format: html
+editor: visual
+---
+
+## Setup
+
+```{r}
+
+```

@@ -8,9 +8,11 @@ editor: visual
 ## Setup
 
 ```{r}
-library(ggplot2)
+library(tidyverse)
 library(dplyr)
 library(ISLR2)
+library(patchwork)
+library(flextable)
 ```
 
 ## Introduction to R
@@ -95,7 +97,8 @@ tibble(x, y) |>
 > a.  Use the `read.csv()` function to read the data into `R`. Call the loaded data `college`. Make sure that you have the directory set to the correct location for the data.
 
 ```{r}
-
+#load from package not from csv file
+college_data <- ISLR2::College
 ```
 
 > b.  Look at the data using the `View()` function. You should notice that the first column is just the name of each university. We don't really want `R` to treat this as data. However, it may be handy to have these names for later. Try the following commands:
@@ -115,7 +118,7 @@ tibble(x, y) |>
 >     Now you should see that the first data column is `Private`. Note that another column labeled `row.names` now appears before the `Private` column. However, this is not a data column but rather the name that R is giving to each row.
 
 ```{r}
-
+head(college_data)
 ```
 
 > c.  
@@ -141,45 +144,139 @@ tibble(x, y) |>
 >
 >     vi. Continue exploring the data, and provide a brief summary of what you discover.
 
+```{r}
+#i
+summary(college_data)
+
+#ii
+#I didn't know this function
+pairs(college_data)
+
+#iii
+#outstate vs private
+ggplot(data = college_data, aes(x = Outstate, fill = Private)) + 
+  geom_boxplot()
+
+#Create a new qualitative variable, called Elite, by binning the Top10perc variable. We are going to divide universities into two groups based on whether or not the proportion of students coming from the top 10% of their high school classes exceeds 50%.
+
+college_data <- college_data |> 
+  mutate(Elite = as.factor(if_else(Top10perc > 50, "Yes", "No")))
+
+#how many elite universities are there ? 
+college_data |> 
+  count(Elite)
+
+
+p1 <- college_data |> 
+  ggplot(aes(x = Apps, fill = Private, color = Private)) +
+  geom_histogram(alpha = 0.2) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom"
+  )
+
+p2 <- college_data |> 
+  ggplot(aes(x = Accept, fill = Private, color = Private)) +
+  geom_histogram(alpha = 0.2) +
+  theme_minimal() +
+    theme(
+    legend.position = ""
+  )
+
+p3 <- college_data |> 
+  ggplot(aes(x = Enroll, fill = Private, color = Private)) +
+  geom_histogram(alpha = 0.2) +
+  theme_minimal() +
+    theme(
+    legend.position = ""
+  )
+
+p1 + p2 + p3
+```
+
 ### Question 9
 
 > This exercise involves the Auto data set studied in the lab. Make sure that the missing values have been removed from the data.
 
 ```{r}
+auto_data <- ISLR2::Auto
 
+#drop NAs
+auto_data <- na.omit(auto_data)
 ```
 
 > a.  Which of the predictors are quantitative, and which are qualitative?
 
 ```{r}
-
+str(auto_data)
 ```
+
+-   quantitative : displacement, horsepower, weight, acceleration, (maybe cylinders)
+-   qualitative : origin, name
 
 > b.  What is the range of each quantitative predictor? You can answer this using the `range()` function.
 
 ```{r}
+auto_data_long <- auto_data |> 
+  pivot_longer(
+    cols = where(is.numeric),
+    names_to = "variable",
+    values_to = "value"
+  )
 
+auto_data_long |> 
+  group_by(variable) |> 
+  summarise(range = max(value) - min(value))
 ```
 
 > c.  What is the mean and standard deviation of each quantitative predictor?
 
 ```{r}
-
+auto_data_long |> 
+  group_by(variable) |> 
+  summarise(range = max(value) - min(value),
+            mean = round(mean(value), digits = 2),
+            sd = round(sd(value), digits = 2))
 ```
 
 > d.  Now remove the 10th through 85th observations. What is the range, mean, and standard deviation of each predictor in the subset of the data that remains?
 
 ```{r}
-
+auto_data |> 
+  slice(-(10:85)) |> 
+  pivot_longer(
+    cols = where(is.numeric),
+    names_to = "variable",
+    values_to = "value"
+  ) |> 
+  group_by(variable) |> 
+  summarise(range = max(value) - min(value),
+            mean = round(mean(value), digits = 2),
+            sd = round(sd(value), digits = 2))
 ```
 
 > e.  Using the full data set, investigate the predictors graphically, using scatterplots or other tools of your choice. Create some plots highlighting the relationships among the predictors. Comment on your findings.
 
-```{r}
+I assume that mpg is the target of prediction.
 
+-   Engine size, horsepower and car weight appear to be very correlated.
+-   the relationship often appear to be non-linear
+-   more are also positively corralted with the above, but not with acceleration
+-   over time, cars tend to be more fuel efficient, weight, displacement, horsepower decrease, acceleration stays about the same
+
+```{r}
+pairs(auto_data, cex = 0.2)
+
+cor_matrix <- auto_data |> 
+  select(where(is.numeric)) |> 
+  cor()
+
+heatmap(cor_matrix, cexRow = 1.1, cexCol = 1.1, margins = c(8, 8))
 ```
 
 > f.  Suppose that we wish to predict gas mileage (`mpg`) on the basis of the other variables. Do your plots suggest that any of the other variables might be useful in predicting `mpg`? Justify your answer.
+
+Yes, especially horsepower and weight. I'm unsure how much of an issue collinearity would be. Apparently it's importance is overstated?
 
 ### Question 10
 
@@ -206,13 +303,15 @@ tibble(x, y) |>
 >     How many rows are in this data set? How many columns? What do the rows and columns represent?
 
 ```{r}
+boston_data <- ISLR2::Boston
 
+dim(Boston)
 ```
 
 > b.  Make some pairwise scatterplots of the predictors (columns) in this data set. Describe your findings.
 
 ```{r}
-
+pairs(boston_data, cex = 0.2)
 ```
 
 > c.  Are any of the predictors associated with per capita crime rate? If so, explain the relationship.

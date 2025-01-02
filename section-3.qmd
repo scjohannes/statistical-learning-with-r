@@ -1,0 +1,83 @@
+---
+title: "Section 3"
+author: "Johannes Schwenke"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Setup
+
+```{r}
+library(MASS)
+library(ISLR2)
+```
+
+## Replication from Section of edx course
+
+### Simple linear regression
+
+```{r simple-linear}
+names(Boston)
+?Boston
+
+plot(medv ~ lstat, Boston) #medv + median value of owner occupied homes, lstat = lower status of the population (percent)
+
+fit1 <- lm(medv ~ lstat, Boston)
+summary(fit1)
+
+abline(fit1, col = "red") #only works with output in console
+
+confint(fit1)
+
+new_data <- data.frame(lstat = c(5, 10, 15))
+predict(fit1, newdata = new_data, interval = "confidence")
+```
+
+### Mutiple linear regression
+
+```{r mulitple-linear}
+fit2 <- lm(medv ~ lstat + age, data = Boston)
+summary(fit2)
+
+fit3 <- lm(medv ~ ., data = Boston)
+summary(fit3)
+plot(fit3)
+
+fit4 <- update(fit3, ~.-age-indus) #remove age and indus, everything else from model 3
+summary(fit4)
+```
+
+### With interaction
+
+```{r}
+fit5 <- lm(medv ~ lstat * age, data = Boston) #main effects + interaction
+summary(fit5)
+```
+
+### Quadratic function
+
+```{r}
+fit6 <- lm(medv ~ lstat + I(lstat^2), data = Boston) #I for identity function
+summary(fit6)
+
+attach(Boston) #make names from Boston available in data space
+
+plot(medv ~ lstat)
+points(lstat, fitted(fit6), col = "red", pch = 20)
+
+#add 4th degree polynomial
+
+fit7 <- lm(medv ~ poly(lstat, 4), data = Boston)
+points(lstat, fitted(fit7), col = "blue", pch = 20)
+
+plot(1:20, 1:20, pch = 1:20)
+```
+
+### Qualitative Predictors
+
+```{r}
+summary(Carseats)
+
+```
